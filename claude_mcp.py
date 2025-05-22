@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP as MCP
 from tools.weather import get_forecast, get_alerts
-from tools.calendar_tools import create_event
+from tools.calendar_tools import create_event, delete_event, list_events, find_and_delete_event
 from tools.time_tools import get_current_time, get_current_date, get_timezone
 import sys
 
@@ -18,11 +18,26 @@ async def get_weather_forecast(latitude: float, longitude: float) -> str:
     """Get weather forecast for a location."""
     return await get_forecast(latitude, longitude)
 
-# Calendar tool
+# Calendar tools
 @mcp.tool()
-async def add_event(summary: str, start_time: str, end_time: str, description: str = "") -> dict:
+async def add_calendar_event(summary: str, start_time: str, end_time: str, description: str = "") -> dict:
     """Create a new Google Calendar event."""
     return await create_event(summary, start_time, end_time, description)
+
+@mcp.tool()
+async def delete_calendar_event(event_id: str) -> dict:
+    """Delete a Google Calendar event by its ID."""
+    return await delete_event(event_id)
+
+@mcp.tool()
+async def list_calendar_events(max_results: int = 10, search_query: str = None, time_min: str = None, time_max: str = None) -> dict:
+    """List calendar events with optional filtering."""
+    return await list_events(max_results, search_query, time_min, time_max)
+
+@mcp.tool()
+async def find_and_delete_calendar_event(title: str = None, description: str = None, start_date: str = None) -> dict:
+    """Find and delete a calendar event based on search criteria (title, description, date)."""
+    return await find_and_delete_event(title, description, start_date)
 
 # Time tools
 @mcp.tool()

@@ -1,64 +1,96 @@
-from adapter.google_apis import send_create_event_request
-import datetime
-import re
-
-def format_datetime_for_google(dt):
-    """Format a datetime object for Google Calendar API."""
-    return dt.strftime("%Y-%m-%dT%H:%M:%S")
-
-def get_current_time():
-    """Get the current time."""
-    return datetime.datetime.now()
-
-def parse_time_string(time_str):
-    """Parse a time string into a datetime object."""
-    # If the time string is 'now', return the current time
-    if time_str.lower() == 'now':
-        return get_current_time()
-    
-    # Try to parse the time string
-    try:
-        # Check if it's already in ISO format
-        if re.match(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}', time_str):
-            return datetime.datetime.fromisoformat(time_str)
-        
-        # Otherwise, assume it's a date/time string
-        return datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        # If parsing fails, return the current time
-        print(f"Could not parse time string '{time_str}', using current time instead")
-        return get_current_time()
+from adapter.google_apis import send_create_event_request, send_delete_event_request, list_calendar_events
 
 async def create_event(title: str, start_time: str, end_time: str, description: str = "") -> dict:
-    """Create a calendar event with proper time handling."""
-    # Parse the start and end times
-    start_dt = parse_time_string(start_time)
-    
-    # If end_time is a duration (e.g., '1h', '30m'), calculate the end time
-    duration_match = re.match(r'(\d+)([hm])', end_time)
-    if duration_match:
-        amount = int(duration_match.group(1))
-        unit = duration_match.group(2)
-        
-        if unit == 'h':
-            end_dt = start_dt + datetime.timedelta(hours=amount)
-        else:  # unit == 'm'
-            end_dt = start_dt + datetime.timedelta(minutes=amount)
-    else:
-        end_dt = parse_time_string(end_time)
-    
-    # Format the times for Google Calendar API
-    formatted_start = format_datetime_for_google(start_dt)
-    formatted_end = format_datetime_for_google(end_dt)
-    
-    print(f"Creating event from {formatted_start} to {formatted_end}")
-    
-    # Send the request to Google Calendar API
-    event = await send_create_event_request(title, formatted_start, formatted_end, description)
-    
+    event = await send_create_event_request(title, start_time, end_time, description)
     return {
         "message": f"Event '{event['summary']}' created.",
         "start": event["start"],
         "end": event["end"],
         "event_id": event["event_id"]
     }
+
+async def delete_event(event_id: str) -> dict:
+    """
+    Delete a calendar event by its ID.
+    """
+    result = await send_delete_event_request(event_id)
+    return result
+
+async def list_events(max_results: int = 10, search_query: str = None, time_min: str = None, time_max: str = None) -> dict:
+    """
+    List calendar events with optional filtering.
+    """
+    return await list_calendar_events(max_results, search_query, time_min, time_max)
+
+async def find_and_delete_event(title: str = None, description: str = None, start_date: str = None) -> dict:
+    """
+    Find and delete an event based on search criteria.
+    
+    Args:
+        title: Event title to search for
+        description: Event description to search for
+        start_date: Start date of the event (YYYY-MM-DD)
+        
+    Returns:
+        Dictionary with result of the operation
+    """
+    # Build search query from title and/or description
+    search_terms = []
+    if title:
+        search_terms.append(title)
+    if description:
+        search_terms.append(description)
+    
+    search_query = " ".join(search_terms) if search_terms else None
+    
+    # Set time range if start_date is provided
+    time_min = None
+    time_max = None
+    if start_date:
+        # Convert date to datetime range for that day
+        time_min = f"{start_date}T00:00:00Z"
+        time_max = f"{start_date}T23:59:59Z"
+    
+    # List events matching the criteria
+    result = await list_calendar_events(
+        max_results=10,
+        search_query=search_query,
+        time_min=time_min,
+        time_max=time_max
+    )
+    
+    if not result['success']:
+        return {
+            "success": False,
+            "message": f"Failed to find events: {result.get('message', 'Unknown error')}"
+        }
+    
+    if result['count'] == 0:
+        return {
+            "success": False,
+            "message": "No events found matching the criteria."
+        }
+    
+    if result['count'] > 1:
+        # Return the list of events found so the user can choose
+        return {
+            "success": False,
+            "message": f"Found {result['count']} events matching the criteria. Please be more specific or provide an event ID.",
+            "events": result['events']
+        }
+    
+    # If exactly one event is found, delete it
+    event = result['events'][0]
+    delete_result = await delete_event(event['id'])
+    
+    if delete_result['success']:
+        return {
+            "success": True,
+            "message": f"Successfully deleted event '{event['summary']}' scheduled for {event['start']}"
+        }
+    else:
+        return {
+            "success": False,
+            "message": f"Found event '{event['summary']}' but failed to delete it: {delete_result.get('message', 'Unknown error')}"
+        }
+
