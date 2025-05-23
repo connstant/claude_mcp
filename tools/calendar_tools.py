@@ -1,13 +1,39 @@
 from adapter.google_apis import send_create_event_request, send_delete_event_request, list_calendar_events, send_update_event_request
 
-async def create_event(title: str, start_time: str, end_time: str, description: str = "") -> dict:
-    event = await send_create_event_request(title, start_time, end_time, description)
-    return {
+async def create_event(title: str, start_time: str, end_time: str, description: str = "", location: str = None, attendees: list = None) -> dict:
+    """
+    Create a new calendar event.
+    
+    Args:
+        title: Event title/summary
+        start_time: Start time in ISO format
+        end_time: End time in ISO format
+        description: Event description (optional)
+        location: Event location (optional)
+        attendees: List of email addresses for attendees (optional)
+        
+    Returns:
+        Dictionary with created event details
+    """
+    event = await send_create_event_request(title, start_time, end_time, description, location, attendees)
+    
+    # Prepare the basic response
+    response = {
         "message": f"Event '{event['summary']}' created.",
         "start": event["start"],
         "end": event["end"],
         "event_id": event["event_id"]
     }
+    
+    # Add location if it exists
+    if "location" in event:
+        response["location"] = event["location"]
+        
+    # Add attendees if they exist
+    if "attendees" in event:
+        response["attendees"] = event["attendees"]
+        
+    return response
 
 async def delete_event(event_id: str) -> dict:
     """
@@ -16,7 +42,7 @@ async def delete_event(event_id: str) -> dict:
     result = await send_delete_event_request(event_id)
     return result
 
-async def update_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None) -> dict:
+async def update_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None, location: str = None, add_attendees: list = None, remove_attendees: list = None) -> dict:
     """
     Update an existing calendar event.
     
@@ -26,14 +52,19 @@ async def update_event(event_id: str, title: str = None, start_time: str = None,
         start_time: New start time for the event (optional)
         end_time: New end time for the event (optional)
         description: New description for the event (optional)
+        location: New location for the event (optional)
+        add_attendees: List of email addresses to add as attendees (optional)
+        remove_attendees: List of email addresses to remove from attendees (optional)
         
     Returns:
         Dictionary with result of the update operation
     """
-    return await send_update_event_request(event_id, title, start_time, end_time, description)
+    return await send_update_event_request(event_id, title, start_time, end_time, description, location, add_attendees, remove_attendees)
 
 async def find_and_update_event(title: str = None, description: str = None, start_date: str = None, 
-                              new_title: str = None, new_start_time: str = None, new_end_time: str = None, new_description: str = None) -> dict:
+                              new_title: str = None, new_start_time: str = None, new_end_time: str = None, 
+                              new_description: str = None, new_location: str = None, 
+                              add_attendees: list = None, remove_attendees: list = None) -> dict:
     """
     Find and update an event based on search criteria.
     
@@ -45,6 +76,9 @@ async def find_and_update_event(title: str = None, description: str = None, star
         new_start_time: New start time for the event
         new_end_time: New end time for the event
         new_description: New description for the event
+        new_location: New location for the event
+        add_attendees: List of email addresses to add as attendees
+        remove_attendees: List of email addresses to remove from attendees
         
     Returns:
         Dictionary with result of the operation
@@ -101,7 +135,10 @@ async def find_and_update_event(title: str = None, description: str = None, star
         title=new_title,
         start_time=new_start_time,
         end_time=new_end_time,
-        description=new_description
+        description=new_description,
+        location=new_location,
+        add_attendees=add_attendees,
+        remove_attendees=remove_attendees
     )
     
     if update_result['success']:

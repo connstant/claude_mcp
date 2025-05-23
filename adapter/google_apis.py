@@ -53,9 +53,20 @@ def get_calendar_service():
     # Build the service with the credentials
     return build('calendar', 'v3', credentials=creds)
 
-async def send_create_event_request(title: str, start_time: str, end_time: str, description: str = "") -> dict:
+async def send_create_event_request(title: str, start_time: str, end_time: str, description: str = "", location: str = None, attendees: list = None) -> dict:
     """
     Sends a request to Google Calendar to create a new event.
+    
+    Args:
+        title: Event title/summary
+        start_time: Start time in ISO format
+        end_time: End time in ISO format
+        description: Event description (optional)
+        location: Event location (optional)
+        attendees: List of email addresses for attendees (optional)
+        
+    Returns:
+        Dictionary with created event details
     """
     # Get the calendar service using our helper function
     service = get_calendar_service()
@@ -65,21 +76,43 @@ async def send_create_event_request(title: str, start_time: str, end_time: str, 
     timezone_str = "America/New_York"
     print(f"[google_apis] Using timezone: {timezone_str}")
     
+    # Create the base event object
     event = {
         'summary': title,
         'description': description,
         'start': {'dateTime': start_time, 'timeZone': timezone_str},
         'end': {'dateTime': end_time, 'timeZone': timezone_str},
     }
+    
+    # Add location if provided
+    if location:
+        event['location'] = location
+    
+    # Add attendees if provided
+    if attendees and isinstance(attendees, list) and len(attendees) > 0:
+        event['attendees'] = [{'email': email} for email in attendees]
+        # Set guestsCanModify to True to allow attendees to modify the event
+        event['guestsCanModify'] = True
 
     created_event = service.events().insert(calendarId='primary', body=event).execute()
 
-    return {
+    # Prepare the response with basic event details
+    response = {
         "event_id": created_event['id'],
         "summary": created_event['summary'],
         "start": created_event['start']['dateTime'],
         "end": created_event['end']['dateTime']
     }
+    
+    # Add location to response if it exists
+    if 'location' in created_event:
+        response['location'] = created_event['location']
+    
+    # Add attendees to response if they exist
+    if 'attendees' in created_event:
+        response['attendees'] = [attendee.get('email') for attendee in created_event['attendees']]
+    
+    return response
 
 async def send_delete_event_request(event_id: str) -> dict:
     """
@@ -102,7 +135,7 @@ async def send_delete_event_request(event_id: str) -> dict:
             "message": f"Failed to delete event: {str(e)}"
         }
 
-async def send_update_event_request(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None) -> dict:
+async def send_update_event_request(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None, location: str = None, add_attendees: list = None, remove_attendees: list = None) -> dict:
     """
     Sends a request to Google Calendar to update an existing event.
     
@@ -112,6 +145,9 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
         start_time: New start time for the event (optional)
         end_time: New end time for the event (optional)
         description: New description for the event (optional)
+        location: New location for the event (optional)
+        add_attendees: List of email addresses to add as attendees (optional)
+        remove_attendees: List of email addresses to remove from attendees (optional)
         
     Returns:
         Dictionary with updated event details
@@ -133,6 +169,10 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
         if description is not None:
             updated_event['description'] = description
             
+        # Update location if provided
+        if location is not None:
+            updated_event['location'] = location
+            
         # Use Eastern Time (EDT) for consistency with event creation
         timezone_str = "America/New_York"
         
@@ -141,6 +181,29 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
             
         if end_time is not None:
             updated_event['end'] = {'dateTime': end_time, 'timeZone': timezone_str}
+            
+        # Handle attendees
+        if add_attendees or remove_attendees:
+            # Get current attendees or initialize empty list
+            current_attendees = updated_event.get('attendees', [])
+            current_emails = [attendee.get('email') for attendee in current_attendees]
+            
+            # Add new attendees
+            if add_attendees and isinstance(add_attendees, list):
+                for email in add_attendees:
+                    if email not in current_emails:  # Avoid duplicates
+                        current_attendees.append({'email': email})
+            
+            # Remove attendees
+            if remove_attendees and isinstance(remove_attendees, list):
+                current_attendees = [attendee for attendee in current_attendees 
+                                  if attendee.get('email') not in remove_attendees]
+            
+            # Update the event with modified attendees list
+            updated_event['attendees'] = current_attendees
+            
+            # Set guestsCanModify to True to allow attendees to modify the event
+            updated_event['guestsCanModify'] = True
         
         # Send the update request
         updated_event = service.events().update(
@@ -149,7 +212,8 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
             body=updated_event
         ).execute()
         
-        return {
+        # Prepare the response with basic event details
+        response = {
             "success": True,
             "message": f"Event '{updated_event['summary']}' updated successfully.",
             "event_id": updated_event['id'],
@@ -157,6 +221,16 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
             "start": updated_event['start']['dateTime'],
             "end": updated_event['end']['dateTime']
         }
+        
+        # Add location to response if it exists
+        if 'location' in updated_event:
+            response['location'] = updated_event['location']
+        
+        # Add attendees to response if they exist
+        if 'attendees' in updated_event:
+            response['attendees'] = [attendee.get('email') for attendee in updated_event['attendees']]
+        
+        return response
     except Exception as e:
         print(f"Error updating event: {e}")
         return {

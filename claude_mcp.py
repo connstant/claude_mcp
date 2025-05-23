@@ -20,9 +20,9 @@ async def get_weather_forecast(latitude: float, longitude: float) -> str:
 
 # Calendar tools
 @mcp.tool()
-async def add_calendar_event(summary: str, start_time: str, end_time: str, description: str = "") -> dict:
-    """Create a new Google Calendar event."""
-    return await create_event(summary, start_time, end_time, description)
+async def add_calendar_event(summary: str, start_time: str, end_time: str, description: str = "", location: str = None, attendees: list = None) -> dict:
+    """Create a new Google Calendar event with optional location and attendees."""
+    return await create_event(summary, start_time, end_time, description, location, attendees)
 
 @mcp.tool()
 async def delete_calendar_event(event_id: str) -> dict:
@@ -40,16 +40,19 @@ async def find_and_delete_calendar_event(title: str = None, description: str = N
     return await find_and_delete_event(title, description, start_date)
 
 @mcp.tool()
-async def update_calendar_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None) -> dict:
-    """Update an existing calendar event by its ID."""
-    return await update_event(event_id, title, start_time, end_time, description)
+async def update_calendar_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, 
+                             description: str = None, location: str = None, add_attendees: list = None, remove_attendees: list = None) -> dict:
+    """Update an existing calendar event by its ID, with support for location and attendees management."""
+    return await update_event(event_id, title, start_time, end_time, description, location, add_attendees, remove_attendees)
 
 @mcp.tool()
 async def find_and_update_calendar_event(title: str = None, description: str = None, start_date: str = None, 
                                        new_title: str = None, new_start_time: str = None, new_end_time: str = None, 
-                                       new_description: str = None) -> dict:
-    """Find and update a calendar event based on search criteria."""
-    return await find_and_update_event(title, description, start_date, new_title, new_start_time, new_end_time, new_description)
+                                       new_description: str = None, new_location: str = None,
+                                       add_attendees: list = None, remove_attendees: list = None) -> dict:
+    """Find and update a calendar event based on search criteria, with support for location and attendees management."""
+    return await find_and_update_event(title, description, start_date, new_title, new_start_time, new_end_time, 
+                                     new_description, new_location, add_attendees, remove_attendees)
 
 # Time tools
 @mcp.tool()
