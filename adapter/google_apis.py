@@ -102,6 +102,68 @@ async def send_delete_event_request(event_id: str) -> dict:
             "message": f"Failed to delete event: {str(e)}"
         }
 
+async def send_update_event_request(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None) -> dict:
+    """
+    Sends a request to Google Calendar to update an existing event.
+    
+    Args:
+        event_id: ID of the event to update
+        title: New title for the event (optional)
+        start_time: New start time for the event (optional)
+        end_time: New end time for the event (optional)
+        description: New description for the event (optional)
+        
+    Returns:
+        Dictionary with updated event details
+    """
+    # Get the calendar service using our helper function
+    service = get_calendar_service()
+    
+    try:
+        # First, get the current event to preserve any fields we're not updating
+        current_event = service.events().get(calendarId='primary', eventId=event_id).execute()
+        
+        # Create an updated event object, starting with the current event
+        updated_event = current_event
+        
+        # Update fields that were provided
+        if title is not None:
+            updated_event['summary'] = title
+            
+        if description is not None:
+            updated_event['description'] = description
+            
+        # Use Eastern Time (EDT) for consistency with event creation
+        timezone_str = "America/New_York"
+        
+        if start_time is not None:
+            updated_event['start'] = {'dateTime': start_time, 'timeZone': timezone_str}
+            
+        if end_time is not None:
+            updated_event['end'] = {'dateTime': end_time, 'timeZone': timezone_str}
+        
+        # Send the update request
+        updated_event = service.events().update(
+            calendarId='primary',
+            eventId=event_id,
+            body=updated_event
+        ).execute()
+        
+        return {
+            "success": True,
+            "message": f"Event '{updated_event['summary']}' updated successfully.",
+            "event_id": updated_event['id'],
+            "summary": updated_event['summary'],
+            "start": updated_event['start']['dateTime'],
+            "end": updated_event['end']['dateTime']
+        }
+    except Exception as e:
+        print(f"Error updating event: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to update event: {str(e)}"
+        }
+
 async def list_calendar_events(max_results: int = 10, search_query: str = None, time_min: str = None, time_max: str = None) -> dict:
     """
     Lists calendar events with optional filtering.

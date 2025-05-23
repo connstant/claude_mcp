@@ -1,6 +1,6 @@
 from mcp.server.fastmcp import FastMCP as MCP
 from tools.weather import get_forecast, get_alerts
-from tools.calendar_tools import create_event, delete_event, list_events, find_and_delete_event
+from tools.calendar_tools import create_event, delete_event, list_events, find_and_delete_event, update_event, find_and_update_event
 from tools.time_tools import get_current_time, get_current_date, get_timezone
 import sys
 
@@ -38,6 +38,18 @@ async def list_calendar_events(max_results: int = 10, search_query: str = None, 
 async def find_and_delete_calendar_event(title: str = None, description: str = None, start_date: str = None) -> dict:
     """Find and delete a calendar event based on search criteria (title, description, date)."""
     return await find_and_delete_event(title, description, start_date)
+
+@mcp.tool()
+async def update_calendar_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None) -> dict:
+    """Update an existing calendar event by its ID."""
+    return await update_event(event_id, title, start_time, end_time, description)
+
+@mcp.tool()
+async def find_and_update_calendar_event(title: str = None, description: str = None, start_date: str = None, 
+                                       new_title: str = None, new_start_time: str = None, new_end_time: str = None, 
+                                       new_description: str = None) -> dict:
+    """Find and update a calendar event based on search criteria."""
+    return await find_and_update_event(title, description, start_date, new_title, new_start_time, new_end_time, new_description)
 
 # Time tools
 @mcp.tool()
