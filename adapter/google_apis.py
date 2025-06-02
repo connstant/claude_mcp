@@ -1,3 +1,11 @@
+# =========================================================================
+# DEPRECATED: This file is being phased out in favor of the modular structure.
+# Please use the following modules instead:
+# - adapter.calendar.auth - For Calendar authentication and service creation
+# - adapter.calendar.events - For event creation, updating, and deletion
+# - adapter.calendar.queries - For listing and searching calendar events
+# =========================================================================
+
 import os
 import json
 import datetime
@@ -94,7 +102,8 @@ async def send_create_event_request(title: str, start_time: str, end_time: str, 
         # Set guestsCanModify to True to allow attendees to modify the event
         event['guestsCanModify'] = True
 
-    created_event = service.events().insert(calendarId='primary', body=event).execute()
+    # Use sendUpdates='all' to send email notifications to all attendees
+    created_event = service.events().insert(calendarId='primary', body=event, sendUpdates='all').execute()
 
     # Prepare the response with basic event details
     response = {
@@ -205,11 +214,12 @@ async def send_update_event_request(event_id: str, title: str = None, start_time
             # Set guestsCanModify to True to allow attendees to modify the event
             updated_event['guestsCanModify'] = True
         
-        # Send the update request
+        # Send the update request with sendUpdates='all' to notify all attendees
         updated_event = service.events().update(
             calendarId='primary',
             eventId=event_id,
-            body=updated_event
+            body=updated_event,
+            sendUpdates='all'
         ).execute()
         
         # Prepare the response with basic event details

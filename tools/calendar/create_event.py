@@ -1,4 +1,4 @@
-from adapter.google_apis import send_create_event_request
+from adapter.calendar.events import send_create_event_request
 
 async def create_event(title: str, start_time: str, end_time: str, description: str = "", location: str = None, attendees: list = None) -> dict:
     """

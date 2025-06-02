@@ -1,9 +1,9 @@
-from adapter import weather_adapter
+from adapter.weather import fetch_forecast_from_api
 
 async def get_forecast(latitude: float, longitude: float) -> str:
     """Get weather forecast for a location."""
     try:
-        forecast_data = await weather_adapter.fetch_forecast_from_api(latitude, longitude)
+        forecast_data = await fetch_forecast_from_api(latitude, longitude)
         if not forecast_data:
             return "Unable to fetch detailed forecast. The weather service may be experiencing issues."
         

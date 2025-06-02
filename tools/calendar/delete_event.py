@@ -1,4 +1,4 @@
-from adapter.google_apis import send_delete_event_request
+from adapter.calendar.events import send_delete_event_request
 
 async def delete_event(event_id: str) -> dict:
     """

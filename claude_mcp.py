@@ -1,7 +1,9 @@
 from mcp.server.fastmcp import FastMCP as MCP
 from tools.weather import get_forecast, get_alerts
 from tools.calendar import create_event, delete_event, list_events, find_and_delete_event, update_event, find_and_update_event
-from tools.time_tools import get_current_time, get_current_date, get_timezone
+from tools.calendar.smart_create_event import smart_create_event
+from tools.contacts import search_person, add_name_alias
+from tools.time import get_current_time, get_current_date, get_timezone
 import sys
 
 # Initialize MCP instance
@@ -69,6 +71,67 @@ def current_date() -> str:
 def current_timezone() -> str:
     """Get the current timezone."""
     return get_timezone()
+
+# Contact tools
+@mcp.tool()
+async def search_contact(name: str) -> dict:
+    """Search for a person by name and return matching contacts."""
+    from tools.contacts import search_person
+    return await search_person(name)
+
+@mcp.tool()
+async def select_contact_from_results(contact_id: int, search_results: dict) -> dict:
+    """Select a specific contact from previous search results by ID."""
+    from tools.contacts import select_contact
+    return select_contact(contact_id, search_results)
+
+@mcp.tool()
+async def create_name_alias(alias: str, email: str) -> dict:
+    """Create a name alias for quick reference (e.g., 'my manager' -> 'manager@company.com')."""
+    from tools.contacts import add_name_alias
+    return await add_name_alias(alias, email)
+
+@mcp.tool()
+async def list_name_aliases() -> dict:
+    """List all currently defined name aliases and their corresponding email addresses."""
+    from tools.contacts import list_name_aliases
+    return await list_name_aliases()
+
+@mcp.tool()
+async def list_contacts() -> dict:
+    """List all available contacts from both directory and fallback sources."""
+    from tools.contacts import list_contacts as get_contacts
+    return await get_contacts()
+
+@mcp.tool()
+async def edit_contact(contact_id: int, new_name: str = None, new_email: str = None) -> dict:
+    """Edit an existing fallback contact by ID."""
+    from tools.contacts import edit_contact as edit_fallback_contact
+    return await edit_fallback_contact(contact_id, new_name, new_email)
+
+@mcp.tool()
+async def add_contact(name: str, email: str) -> dict:
+    """Add a new fallback contact with the given name and email."""
+    from tools.contacts import add_contact as add_fallback_contact
+    return await add_fallback_contact(name, email)
+
+@mcp.tool()
+async def delete_contact(contact_id: int) -> dict:
+    """Delete a fallback contact by ID."""
+    from tools.contacts import delete_contact as delete_fallback_contact
+    return await delete_fallback_contact(contact_id)
+
+# Smart calendar tools
+@mcp.tool()
+async def smart_add_calendar_event(summary: str, start_time: str, end_time: str, 
+                                 description: str = "", location: str = None, 
+                                 attendee_names: list = None) -> dict:
+    """Create a calendar event with smart name resolution for attendees.
+    
+    Instead of requiring email addresses, you can provide names that will be resolved to emails.
+    Any names that cannot be automatically resolved will be returned as unresolved_attendees.
+    """
+    return await smart_create_event(summary, start_time, end_time, description, location, attendee_names)
 
 if __name__ == "__main__":
     try:

@@ -1,5 +1,5 @@
-from adapter.google_apis import list_calendar_events
-from adapter.google_apis import send_delete_event_request
+from adapter.calendar.queries import list_calendar_events
+from adapter.calendar.events import send_delete_event_request
 
 async def find_and_delete_event(title: str = None, description: str = None, start_date: str = None) -> dict:
     """

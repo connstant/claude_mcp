@@ -1,10 +1,6 @@
-# =========================================================================
-# DEPRECATED: This file is being phased out in favor of the modular structure.
-# Please use the following modules instead:
-# - adapter.weather.client - For base HTTP client for weather API requests
-# - adapter.weather.alerts - For weather alerts functionality
-# - adapter.weather.forecast - For weather forecast functionality
-# =========================================================================
+"""
+Base client for weather API requests.
+"""
 
 import httpx
 import json
@@ -49,17 +45,3 @@ async def make_nws_request(url: str) -> dict | None:
         except Exception as e:
             print(f"[weather_adapter] Unexpected exception: {e}")
             return None
-
-async def fetch_alerts_from_api(state: str) -> dict:
-    """Adapter: Fetch raw alerts data for a US state from the weather API."""
-    url = f"{NWS_API_BASE}/alerts/active/area/{state}"
-    return await make_nws_request(url)
-
-async def fetch_forecast_from_api(latitude: float, longitude: float) -> dict:
-    """Adapter: Fetch raw forecast data for a location from the weather API."""
-    points_url = f"{NWS_API_BASE}/points/{latitude},{longitude}"
-    points_data = await make_nws_request(points_url)
-    if not points_data:
-        return None
-    forecast_url = points_data["properties"]["forecast"]
-    return await make_nws_request(forecast_url)

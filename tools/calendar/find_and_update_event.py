@@ -1,4 +1,5 @@
-from adapter.google_apis import send_update_event_request
+from adapter.calendar.queries import list_calendar_events
+from adapter.calendar.events import send_update_event_request
 
 async def find_and_update_event(title: str = None, description: str = None, start_date: str = None, 
                               new_title: str = None, new_start_time: str = None, new_end_time: str = None, 

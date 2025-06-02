@@ -1,4 +1,4 @@
-from adapter.google_apis import send_update_event_request
+from adapter.calendar.events import send_update_event_request
 
 async def update_event(event_id: str, title: str = None, start_time: str = None, end_time: str = None, description: str = None, location: str = None, add_attendees: list = None, remove_attendees: list = None) -> dict:
     """
