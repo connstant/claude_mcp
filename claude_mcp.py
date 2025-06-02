@@ -1,13 +1,13 @@
 from mcp.server.fastmcp import FastMCP as MCP
 from tools.weather import get_forecast, get_alerts
-from tools.calendar_tools import create_event, delete_event, list_events, find_and_delete_event, update_event, find_and_update_event
+from tools.calendar import create_event, delete_event, list_events, find_and_delete_event, update_event, find_and_update_event
 from tools.time_tools import get_current_time, get_current_date, get_timezone
 import sys
 
 # Initialize MCP instance
 mcp = MCP()
 
-# Weather tools
+# Weather tools 
 @mcp.tool()
 async def get_weather_alerts(state: str) -> str:
     """Get weather alerts for a US state."""
