@@ -1,4 +1,4 @@
-from adapter import weather_adapter
+from adapter.weather import fetch_alerts_from_api
 
 def format_alert(feature: dict) -> str:
     """Format an alert feature into a readable string."""
@@ -14,7 +14,7 @@ Instructions: {props.get('instruction', 'No specific instructions provided')}
 async def get_alerts(state: str) -> str:
     """Get weather alerts for a US state."""
     try:
-        data = await weather_adapter.fetch_alerts_from_api(state)
+        data = await fetch_alerts_from_api(state)
         if not data:
             return "Unable to fetch alerts. The weather service may be experiencing issues."
             

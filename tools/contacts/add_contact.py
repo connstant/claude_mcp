@@ -2,7 +2,7 @@
 Tool to add a new fallback contact.
 """
 
-from adapter.directory_api import add_fallback_contact
+from adapter.contacts.fallback import add_fallback_contact
 
 async def add_contact(name: str, email: str):
     """
